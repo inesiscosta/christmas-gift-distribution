@@ -1,48 +1,64 @@
-# GiftRequests
-A gifts distribution optimizer based on linear programing using PULP and the GLPK solver for our Analysis and Synthesis of Algorithms class.
-It determines the number of gift requests made by childern around the world that can be fulfilled this Christmas given constraints in the toy factories.
+# Gift Requests
 
-# Constraints
+Santa has toy factories around the world, each with limited stock, and every country has export limits and a minimum number of gifts it must receive. Children can ask for several toys but get at most one. How many children can be made happy this Christmas?
 
-- Each factory produces a single type of toy and has a maximum stock limit.
-- Each country has a minimum number of gifts that must be delivered.
-- There are limits on the total exports from the factories in each country.
-- Each child can request multiple toys but will receive at most one.
+This program answers that with integer linear programming, using [PuLP](https://coin-or.github.io/pulp/) and the GLPK solver. Built with Miguel Raposo for the Algorithm Analysis and Synthesis course at Instituto Superior Técnico.
 
-## Usage
+## The Model
 
-### Input:
+**Variables.** One binary variable for every (child, factory) request. It's `1` if that child gets their toy from that factory.
 
-- The first line contains three integers: the number of factories `n`, the number of countries `m`, and the number of children `t`.
+**Objective.** Maximize the number of requests fulfilled, which is the number of happy children.
 
--  The next `n` lines each contain three integers: the factory ID `i`, the country ID `j` where the factory is located, and the maximum stock `f_max_i` of the factory.
+**Constraints:**
 
-- The next `m` lines each contain three integers: the country ID `j`, the maximum export limit `p_max_j`, and the minimum number of gifts `p_min_j` to be delivered in that country.
+| Rule | Constraint |
+|---|---|
+| Each child gets at most one gift | for each child, the sum of their request variables ≤ 1 |
+| Factories can't exceed their stock | for each factory, the sum of requests it fulfils ≤ its stock |
+| Countries have export limits | for each country, gifts sent from its factories to children abroad ≤ its export limit |
+| Countries have a minimum | for each country, gifts received by its children ≥ its minimum |
 
-- The next `t` lines each contain the child ID `k`, the country ID `j` where the child lives, and the IDs of the factories from which the child requests toys.
+Factories with no stock and requests to unknown factories are dropped before the model is built, which keeps it smaller. If no assignment satisfies every minimum, the program prints `-1`.
 
-### Example input:
+## Input
 
-<pre>
-3 2 3
-1 1 1
-2 1 1
-3 2 1
-1 2 1
-2 2 1
-1 1 2 3
-2 1 2 1
-3 2 1
-</pre>
-
-### Running the program:
-
-```shell
-python ./src/main.py < input_file.txt
+```
+n m t                                    factories, countries, children
+i  j  f_max_i                    × n     factory i is in country j and has f_max_i toys
+j  p_max_j  p_min_j              × m     country j exports at most p_max_j and must receive at least p_min_j
+k  j  f1 f2 …                    × t     child k lives in country j and asks for toys from factories f1, f2, …
 ```
 
-### Running public tests using pytest:
+### Example
 
-```shell
-python -m pytest ./tests/test_public.py
+```console
+$ printf '3 2 3\n1 1 1\n2 1 1\n3 2 1\n1 2 1\n2 2 1\n1 1 2 3\n2 1 2 1\n3 2 1\n' | python src/main.py
+3
 ```
+
+Three factories with one toy each, across two countries, and three children. All three children can get a toy.
+
+## Running
+
+Needs Python 3, PuLP and GLPK:
+
+```sh
+pip install pulp
+sudo apt-get install glpk-utils   # or: brew install glpk
+
+python src/main.py < input.txt
+```
+
+## Tests
+
+```sh
+pip install pytest
+python -m pytest src/tests/test_public.py
+```
+
+`src/tests/test_generator.py` generates larger random instances.
+
+## License
+
+[MIT](LICENSE) © 2024 Inês Costa and Miguel Raposo
