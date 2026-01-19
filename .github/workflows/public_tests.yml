@@ -23,7 +23,7 @@ jobs:
     - name: Install Pulp
       run: |
         python -m pip install --upgrade pip
-        pip install pulp numpy
+        pip install 'pulp<3'
 
     - name: Install GLPK
       run: |
